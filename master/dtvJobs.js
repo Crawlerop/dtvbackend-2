@@ -30,7 +30,7 @@ module.exports = {
                     additional_params: params.additional_params,
                     buffer_size: config.dtv_buffer_size,
                     watermark: config.watermark_ignore_streams.indexOf(stream_id) !== -1 ? "" : config.watermark,
-                    pathname: path.resolve(__dirname + "/../")+"/"
+                    pathname: path.resolve(__dirname + "/../")
                 })
             } else if (type == "dtv") {
                 cur_proc.send({
@@ -56,7 +56,7 @@ module.exports = {
                     system: params.system ? params.system : "DVB-T2",
                     watermark: config.watermark,
                     watermark_ignore_streams: config.watermark_ignore_streams,
-                    pathname: path.resolve(__dirname + "/../")+"/",
+                    pathname: path.resolve(__dirname + "/../"),
                     do_scale: config.nvdec_use_scale,
                     do_scale_exclude: config.nvdec_scale_exclude,
                     do_sw_decode: config.nvdec_sw_decode
@@ -75,7 +75,7 @@ module.exports = {
                     multiple_renditions: config.multiple_renditions, 
                     hls_settings: config.hls_settings,
                     watermark: config.watermark_ignore_streams.indexOf(stream_id) !== -1 ? "" : config.watermark,
-                    pathname: path.resolve(__dirname + "/../")+"/"
+                    pathname: path.resolve(__dirname + "/../")
                 })
             }
             cur_proc.on("message", (d) => {

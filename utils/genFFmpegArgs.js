@@ -685,7 +685,7 @@ module.exports = {
         args.push(1)
         args.push("-hls_segment_filename")
         args.push(output+"/%Y%m%dT%H%M%S-%v-%%01d.ts")
-        args.push(output+"%v.m3u8")
+        args.push(output+"/%v.m3u8")
 
         return args
         // main -b:v 600k -maxrate:v 600k -bufsize:v 1M
@@ -763,7 +763,7 @@ module.exports = {
         args.push(1)
         args.push("-hls_segment_filename")
         args.push(output+"/%Y%m%dT%H%M%S-%v-%%01d.ts")
-        args.push(output+"%v.m3u8")
+        args.push(output+"/%v.m3u8")
 
         return args
         // main -b:v 600k -maxrate:v 600k -bufsize:v 1M
