@@ -499,6 +499,13 @@ module.exports = {
             } else if (rendition.hwaccel == "none") {
                 if (!is_start) {
                     is_start = true
+
+                    const INTERP_ALGO_TO_SCALE = {
+                        1: "neighbor",
+                        2: "bilinear",
+                        3: "bicubic",
+                        4: "lanczos"
+                    }
                         
                     if (COPY_TS) {
                         args.push("-copyts")
@@ -536,14 +543,57 @@ module.exports = {
                         args.push("-i")
                         args.push(watermark)
                     }
+
+                    var filter_complex = ""
+
+                    if (video_id != -1) {
+                        filter_complex += `[0:v:#${video_id}]`
+                    } else {
+                        filter_complex += "[0:v:0]"
+                    }
+                    
+                    if (watermark) {
+                        filter_complex += `yadif[a];null[b];[a][b]overlay,split=${renditions.length}`
+                    } else {
+                        filter_complex += `yadif,split=${renditions.length}`
+                    }
+                    
+                    for (let rend_id = 0; rend_id<renditions.length; rend_id++) {
+                        filter_complex += `[a${rend_id}]`
+                    }
+
+                    filter_complex += ";"
+
+                    for (let rend_id = 0; rend_id<renditions.length; rend_id++) {
+                        filter_complex += `[a${rend_id}]`
+                        if (renditions[rend_id].height !== video.height || video.interlace !== 'progressive') {
+                            filter_complex += `scale=${Math.min(Math.floor(video.height*WIDESCREEN), rendition.width)}:${Math.min(video.height, rendition.height)}:flags=${INTERP_ALGO_TO_SCALE[renditions[rend_id].interp_algo]},setsar=1,fps=${fps}${COPY_TS ? "" : ":start_time=0:round=near"}[p${rend_id}]`
+                        } else {
+                            filter_complex += `setsar=1,fps=${fps}${COPY_TS ? "" : ":start_time=0:round=near"}[p${rend_id}]`
+                        }
+                        if (rend_id < renditions.length-1) filter_complex += ";"
+                    }
+
+                    //console.log(filter_complex)
+                    args.push("-filter_complex")
+                    if (escape_filters) {
+                        args.push(`"${filter_complex}"`)
+                    } else {
+                        args.push(filter_complex)
+                    }
                 }
 
                 args.push("-map")
+                args.push(`[p${i}]`)
+
+                /*
                 if (video_id != -1) {
                     args.push(`0:v:#${video_id}`)
                 } else {
                     args.push("0:v:0")
-                }                
+                } 
+                */
+
                 if (audio) {
                     args.push("-map")
                     if (audio_id != -1) {
@@ -563,13 +613,7 @@ module.exports = {
                 args.push(`-c:v:${i}`)
                 args.push("libx264")
 
-                const INTERP_ALGO_TO_SCALE = {
-                    1: "neighbor",
-                    2: "bilinear",
-                    3: "bicubic",
-                    4: "lanczos"
-                }
-
+                /*
                 const interp_algo = INTERP_ALGO_TO_SCALE[rendition.interp_algo]
 
                 args.push(`-filter:v:${i}`)
@@ -578,6 +622,7 @@ module.exports = {
                 } else {
                     args.push(`yadif,scale=${Math.min(Math.floor(video.height*WIDESCREEN), rendition.width)}:${Math.min(video.height, rendition.height)}:flags=${interp_algo},setsar=1,fps=${fps}${COPY_TS ? "" : ":start_time=0:round=near"}`)
                 }
+                */
                 
 
                 args.push(`-preset:v:${i}`)
