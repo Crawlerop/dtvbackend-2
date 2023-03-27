@@ -1,0 +1,41 @@
+{
+  "name": "dtvbackend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cors": "^8.2.0",
+    "@fastify/static": "^6.6.0",
+    "amqplib": "^0.10.3",
+    "axios": "^1.2.1",
+    "cancelable-promise": "^4.3.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-http-proxy": "^1.6.3",
+    "express-slow-down": "^1.5.0",
+    "express-ws": "^5.0.2",
+    "fastify": "^4.10.2",
+    "fastify-plugin": "^4.4.0",
+    "geoip-lite": "^1.4.6",
+    "glob": "^8.0.3",
+    "knex": "^2.3.0",
+    "luxon": "^3.1.0",
+    "m3u8": "^0.0.10",
+    "node-media-server": "^2.4.9",
+    "node-upnp-control-point": "^0.0.3",
+    "nominatim-client": "^3.2.1",
+    "objection": "^3.0.1",
+    "redis": "^4.5.1",
+    "snake-case": "^3.0.4",
+    "sqlite3": "^5.1.2",
+    "tmp": "^0.2.1",
+    "wait-for-event": "^2.0.1",
+    "websocket-as-promised": "^2.0.1",
+    "ws": "^8.11.0"
+  }
+}

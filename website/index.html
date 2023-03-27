@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>DTV Uplink Control Panel</title>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@microsoft/fast-components/dist/fast-components.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.2/shaka-player.compiled.js" integrity="sha512-/yQyu2QCIHThBekpwc49CUf01hj4DTI+usHK5jZgpBkAxCWowJ112YWHqw7L9vS1/VyrOCma1Y0MVf1gc0XKYw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.2/shaka-player.ui.min.js" integrity="sha512-My7HWrSUstOQITHXr1qanNoXCEb8aJweepK7Hj+mQegYmzGNKjNa37t6ldDbAXHT4FmLdGV2sq/rgFXuaIdwyQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.2/controls.min.css" integrity="sha512-6CAOpe+kF1fCTzRcZlS1iak5PY3M5lT+Ato5R3GJ0GXtoRTY6UOyGUNNG1va+mws+XDs1w3a6+iXQtw6n/Ef+w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://github.com/videojs/mux.js/releases/latest/download/mux.js"></script>
+
+        <style>
+            html {
+                font-family: sans-serif;
+                color: #ffffff;
+                background-color: #333333;                                       
+            }   
+            fast-radio {
+                --accent-fill-rest: #0080ff;
+                --accent-fill-hover: #40c0ff;
+            }
+            fast-checkbox {
+                --accent-fill-rest: #0080ff;
+                --accent-fill-hover: #00c0ff;
+                --accent-fill-active: #b0c0ff;
+            }
+            fast-number-field {
+                --accent-fill-rest: #004080;
+                --accent-fill-hover: #0080ff;
+            }
+            fast-text-field {
+                --accent-fill-rest: #0080ff;
+                --accent-fill-hover: #00c0ff;
+                --accent-fill-active: #80c0ff;
+            }
+            fast-dialog {
+                --dialog-width: 720px;
+                --dialog-height: 600px;
+            }
+            fast-button {
+                --accent-fill-rest: #004080;
+                --accent-fill-hover: #0080ff;
+                --accent-fill-active: #00c0ff;
+                --focus-stroke-inner: #00e0ff;
+            }
+            fast-option {
+                --accent-fill-rest: #0080ff;
+                --accent-fill-hover: #00c0ff;
+                --accent-fill-active: #80c0ff;
+
+                --accent-fill-focus: #00a0ff;
+                --focus-stroke-inner: #00e0ff;
+            }
+            fast-select {
+                --accent-fill-rest: #0080ff;
+                --accent-fill-hover: #00c0ff;
+                --accent-fill-active: #80c0ff;
+
+                --accent-fill-focus: #00a0ff;
+                --focus-stroke-inner: #00e0ff;
+            }
+            fast-progress {
+                --accent-foreground-rest: #00a0e0;                
+            }
+            fast-badge {
+                --badge-fill-primary: #00FF00;
+                --badge-fill-danger: #FF0000;
+                --badge-color-light: #FFFFFF;
+                --badge-color-dark: #000000;
+                --accent-foreground-rest: #ff8040;                
+            }
+        </style>
+    </head>
+    <body>        
+        <fast-card>
+            <div class="header">
+                <fast-toolbar id="toolbar" style="float: right">
+                    <a href="/" style="position: absolute; left: 12px; top: 12px;">
+                        <img src="/static/locCaster.png" width="120">
+                    </a>
+                    <fast-button id="add">Add</fast-button>
+                    <fast-button id="edit" disabled>Edit</fast-button>
+                    <fast-button id="delete" disabled>Delete</fast-button>
+                    <fast-button id="activate" disabled>Activate</fast-button>
+                    <fast-button id="play" disabled>Play</fast-button>
+                    <fast-button id="dvr" disabled>DVR</fast-button>
+                    <fast-button id="publish-url" disabled>Copy publish url to clipboard</fast-button>
+                    <fast-button id="tuner-status">Tuner status</fast-button>
+                    <fast-button id="settings">Settings</fast-button>
+                    <fast-button id="shutdown">Shutdown server</fast-button>
+                </fast-toolbar>
+            </div>
+            <br>
+            <h2>&nbsp;TV Streams:</h2>&nbsp;
+            <fast-listbox id="streams">
+                <!-- <fast-option value="">Test</fast-option> -->
+            </fast-listbox>            
+            <fast-divider></fast-divider>
+            <p style="text-align: right;">&copy; 2023&nbsp;</p>
+        </fast-card>
+        <fast-dialog id="add-channels" modal="true" hidden>
+            <div style="width:640px; height:540px;" id="add-channels-options">
+                <h2 id="title"></h2>
+                <fast-text-field id="name" size="72" type="text" placeholder="Name"></fast-text-field>
+                <h4>Stream type:</h4>
+                <fast-radio-group id="dtv-type" value="dtv">
+                    <fast-radio value="dtv">Digital TV Tuner</fast-radio>
+                    <fast-radio value="dvb2ip">DVB2IP</fast-radio>
+                    <fast-radio value="rtmp">RTMP</fast-radio>
+                    <fast-radio value="pull">Pull</fast-radio>                
+                </fast-radio-group>
+                <div id="dvb-setting">
+                    <p id="dvb-msg"></p>
+                    <!-- <fast-number-field min="0" value="0" id="adapter">Adapter</fast-number-field> -->
+                    Adapter:
+                    <fast-select id="adapter" value="0" style="width: 175px; min-width: 0px;">
+                        
+                    </fast-select>
+                    <fast-button appearance="accent" id="auto-scan">Auto Scan</fast-button>
+                    <fast-button appearance="accent" id="manual-scan">Manual Scan</fast-button>
+                    <fast-button appearance="accent" id="recent-scan" disabled>Obtain from recent scan</fast-button>
+                    <fieldset>
+                        <legend>Scan frequencies</legend>
+                        <fast-radio-group id="scan-frequencies" value="vhf_uhf">
+                            <fast-radio value="vhf_uhf">VHF/UHF</fast-radio>         
+                            <fast-radio value="vhf">VHF</fast-radio>         
+                            <fast-radio value="uhf">UHF</fast-radio>                
+                        </fast-radio-group>
+                    </fieldset>
+                    <fieldset>
+                        <legend>DTV System</legend>
+                        <fast-radio-group id="dtv-system" value="dvbt2">
+                            <fast-radio value="dvbt2">DVB-T2</fast-radio>         
+                            <fast-radio value="dvbt">DVB-T</fast-radio>         
+                            <fast-radio value="atsc">ATSC</fast-radio>         
+                            <fast-radio value="isdb" disabled>ISDB</fast-radio>        
+                            <fast-radio value="dtmb" disabled>DTMB</fast-radio>            
+                        </fast-radio-group>
+                    </fieldset>
+                    <fieldset id="isdb-system-type" hidden>
+                        <legend>ISDB System Type</legend>
+                        <fast-radio-group id="isdb-type" value="japan">
+                            <fast-radio value="japan">Japan</fast-radio>         
+                            <fast-radio value="latam">LATAM</fast-radio>         
+                            <fast-radio value="philippines">Philippines</fast-radio>                                     
+                        </fast-radio-group>
+                    </fieldset>
+                </div>            
+                <div id="dvb2ip-setting" hidden>
+                    <p id="dvb2ip-msg"></p>
+                    <fast-text-field type="text" id="source" size="50">Source address</fast-text-field>
+                    <fast-button appearance="accent" id="scan">Scan</fast-button>                
+                </div>
+                <div id="rtmp-setting" hidden>
+                    <fast-checkbox id="passthrough">Stream passthrough</fast-checkbox>
+                </div>
+                <div id="pull-setting" hidden>
+                    <fast-text-field type="text" id="source" size="50">Source address</fast-text-field><br>
+                    <fast-checkbox id="realtime">Realtime</fast-checkbox>
+                    <fast-checkbox id="passthrough">Stream passthrough</fast-checkbox>
+                </div>
+            </div>
+            <fast-button appearance="accent" id="cancel" style="float: left">Cancel</fast-button>                
+            <fast-button appearance="accent" id="create" style="float: right" disabled>Create</fast-button>                
+
+            <fast-dialog modal="true" style="--dialog-width: 480px; --dialog-height: 120px" id="auto-scan-progress" hidden>
+                <h2>Scanning for channels</h2>
+                <p id="status"></p>
+                <fast-progress min="0" max="0" value="0" id="scan-progress"></fast-progress>
+            </fast-dialog>
+
+            <fast-dialog modal="true" id="dvb-results" hidden>
+                <div id="multiplexes" style="width:640px; height:540px;" hidden>
+                    <h2>Available multiplexes</h2>
+                    <label id="freq-text">Select the multiplex you'll be using for:</label>
+                    <br />
+                    <fast-select aria-labelledby="freq-text" id="frequency">
+                        <!-- <fast-option value="value">12345</fast-option> -->
+                    </fast-select>
+                    <br />
+                </div>
+                <div id="channels" style="width:720px; height:540px;" hidden>
+                    <h2>Select the channels</h2>
+                    <div id="channels-list" style="width:720px; height:300px; overflow-y: scroll;">
+                        <fieldset>
+                            <legend>Select the channels you'll be streaming from:</legend>
+                            <div id="channels-listbox"></div>
+                            <!--
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            <fast-checkbox id="s1" checked>Stream</fast-checkbox><br>
+                            -->
+                        </fieldset>
+                    </div><br />
+                    
+                    <center>
+                        <fast-text-field id="additional-params" size="72" type="text" placeholder="Additional parameters"></fast-text-field>
+                    </center>
+                    <br />
+                </div>
+                <fast-button appearance="accent" id="cancel" style="float: left" hidden>Cancel</fast-button>                
+                <fast-button appearance="accent" id="back" style="float: left">Back</fast-button>                
+                <fast-button appearance="accent" id="next" style="float: right" hidden>Next</fast-button>                
+                <fast-button appearance="accent" id="apply" style="float: right">Apply</fast-button>                
+            </fast-dialog>
+
+            <fast-dialog modal="true" id="dvb2ip-results" hidden>
+                <div id="dvb2ip-channels" style="width:720px; height:540px;">
+                    <h2>Select a channel</h2>
+                    <div id="channels-list" style="width:720px; height:240px;">
+                        <fieldset>
+                            <legend>Select the channel you'll be streaming from:</legend>
+                            <fast-select id="channel">
+                                <!--
+                                <fast-option value="value">12345</fast-option>
+                                <fast-option value="value">12345</fast-option>
+                                -->
+                            </fast-select>
+                        </fieldset>
+                    </div><br />
+                    <center>
+                        <fast-text-field id="additional-params" size="72" type="text" placeholder="Additional parameters"></fast-text-field>
+                    </center>
+                    <br />
+                </div>
+                <fast-button appearance="accent" id="cancel" style="float: left">Cancel</fast-button>                
+                <fast-button appearance="accent" id="apply" style="float: right">Apply</fast-button>                
+            </fast-dialog>
+
+            <fast-dialog modal="true" id="manual-scan-menu" hidden>
+                <div id="manual-scan-box" style="width:640px; height:540px;">
+                    <h2>Manual Scan</h2>
+                    Channel: 
+                    <fast-select id="channel">
+                        <!--
+                        <fast-option value="value">12345</fast-option>
+                        <fast-option value="value">12345</fast-option>
+                        -->
+                    </fast-select><br/><br/>
+                    Frequency (Mhz):
+                    <fast-number-field min="48.0" max="870.0" maxLength="8" value="48.0" id="frequency"></fast-number-field><br/><br/>
+                    Bandwidth
+                    <fast-select id="bandwidth" value="8">
+                        <!--
+                        <fast-option value="value">12345</fast-option>
+                        <fast-option value="value">12345</fast-option>
+                        -->
+                        <fast-option value="6">6M</fast-option>
+                        <fast-option value="7">7M</fast-option>
+                        <fast-option value="8">8M</fast-option>
+                    </fast-select>
+                </div>
+                <fast-button appearance="accent" id="back" style="float: left">Back</fast-button>                
+                <fast-button appearance="accent" id="start" style="float: right">Start</fast-button>                
+            </fast-dialog>
+        </fast-dialog>
+        <fast-dialog modal="true" id="delete-msg" style="--dialog-width: 640px; --dialog-height: 320px" hidden>
+            <div style="width: 640px; height: 260px">
+                <center><h1>Are you sure you want to delete this stream?</h1></center>
+            </div>
+            <fast-button appearance="accent" id="no" style="float: left">No</fast-button>                
+            <fast-button appearance="accent" id="yes" style="float: right">Yes</fast-button>                
+        </fast-dialog>
+        <fast-dialog modal="true" id="tuner-status-box" style="--dialog-width: 640px; --dialog-height: 480px" hidden>
+            <h2>Tuner status</h2>
+            <div style="width: 640px; height: 370px; overflow-y: scroll;" id="tuner-status">
+                
+            </div>
+            <fast-button appearance="accent" id="close" style="float: left">Close</fast-button>                
+        </fast-dialog>
+        <fast-dialog modal="true" id="settings-box" style="--dialog-width: 640px; --dialog-height: 480px" hidden>
+            <h2>Settings</h2>
+            <div style="width: 640px; height: 370px;" id="settings">
+                <p>Edit the config.json used for this server.</p>    
+                <div id="status"></div>
+                <fast-text-area id="data" rows="15" cols="100"></fast-text-area>
+            </div>
+            <fast-button appearance="accent" id="cancel" style="float: left">Cancel</fast-button>                
+            <fast-button appearance="accent" id="apply" style="float: right">Apply and Restart</fast-button>                
+        </fast-dialog>
+        <fast-dialog modal="true" id="restart-required" style="--dialog-width: 320px; --dialog-height: 180px" hidden>
+            <center>
+                <h2>Restart required</h2>
+                <p>A restart is required to complete this operation. This page will be reloaded in 5 seconds.</p>
+            </center>
+        </fast-dialog>
+        <fast-dialog modal="true" id="shutdown-msg" style="--dialog-width: 640px; --dialog-height: 320px" hidden>
+            <div style="width: 640px; height: 260px">
+                <center><h1>Are you sure you want to shutdown this server?</h1></center>
+            </div>
+            <fast-button appearance="accent" id="no" style="float: left">No</fast-button>                
+            <fast-button appearance="accent" id="yes" style="float: right">Yes</fast-button>                
+        </fast-dialog>
+        <fast-dialog modal="true" id="shutdown-ok" style="--dialog-width: 320px; --dialog-height: 180px" hidden>
+            <center>
+                <h2>Server is shutting down</h2>
+                <p>This server is shutting down...</p>
+            </center>
+        </fast-dialog>
+        <fast-dialog modal="true" id="video-player" style="--dialog-width: 640px; --dialog-height: 480px" hidden>
+            <fast-button appearance="accent" id="close" style="float: right"><b>X</b></fast-button>     
+            <div data-shaka-player-container id="player-box" style="position: relative; top: 25px; max-width: 40em; width: 640px; height: 360px;">
+                <video style="width: 100%; height: 100%" data-shaka-player autoplay id="player"></video>    
+            </div>
+        </fast-dialog>
+        <fast-dialog modal="true" id="video-player-list" style="--dialog-width: 640px; --dialog-height: 480px" hidden>
+            <div id="list-content" style="width: 640px; height: 420px">
+                <h2>MUX Player</h2>
+                <p>Select the program you're going to watch:</p>
+                <fast-select id="program">
+
+                </fast-select>
+            </div>
+            <fast-button appearance="accent" id="back" style="float: left">Back</fast-button>   
+            <fast-button appearance="accent" id="watch" style="float: right">Watch</fast-button>                             
+        </fast-dialog>
+        <fast-dialog modal="true" id="dvr-menu" style="--dialog-width: 640px; --dialog-height: 480px" hidden>
+            <fast-button appearance="accent" id="close" style="float: right"><b>X</b></fast-button>    
+            <h2>DVR</h2>
+            <div id="dvr-list" style="width: 640px; height: 360px; overflow: auto">
+                <fast-listbox id="list"></fast-listbox>
+            </div>
+            Channel: <fast-select id="channel"></fast-select>&nbsp;
+            <fast-button appearance="accent" id="start" disabled>Start</fast-button>&nbsp;
+            <fast-button appearance="accent" id="stop" disabled>Stop</fast-button>&nbsp;
+            <fast-button appearance="accent" id="play" disabled>Play</fast-button>&nbsp;
+            <fast-button appearance="accent" id="delete" disabled>Delete</fast-button>                                
+        </fast-dialog>
+        <script>
+            $(() => {                
+                /* Those frequencies only applies to DVB-T standard */
+
+                const VHF_START_NUM = 5
+                const UHF_START_NUM = 21
+
+                const VHF_FREQUENCIES = [
+                    177.5, // 5
+                    184.5, // 6
+                    191.5, // 7
+                    198.5, // 8
+                    205.5, // 9
+                    212.2, // 10
+                    219.5, // 11
+                    226.5, // 12
+                    // Those were Nexmedia channels
+                    /*
+                    290.5, // S01
+                    313.5, // S02
+                    320.5 // S03
+                    */
+                ]
+
+                const UHF_FREQUENCIES = [
+                    474, // 21
+                    482, // 22
+                    490, // 23
+                    498, // 24
+                    506, // 25
+                    514, // 26
+                    522, // 27
+                    530, // 28
+                    538, // 29
+                    546, // 30
+                    554, // 31
+                    562, // 32
+                    570, // 33
+                    578, // 34
+                    586, // 35
+                    594, // 36
+                    602, // 37
+                    610, // 38
+                    618, // 39
+                    626, // 40
+                    634, // 41
+                    642, // 42
+                    650, // 43
+                    658, // 44
+                    666, // 45
+                    674, // 46
+                    682, // 47
+                    690, // 48
+                    698, // 49
+                    706, // 50
+                    714, // 51
+                    722, // 52
+                    730, // 53
+                    738, // 54
+                    746, // 55
+                    754, // 56
+                    762, // 57
+                    770, // 58
+                    778, // 59
+                    786, // 60
+                    794, // 61
+                    802, // 62
+                    810, // 63
+                    818, // 64
+                    826, // 65
+                    834, // 66
+                    842, // 67
+                    850, // 68
+                    858 // 69
+                ]
+            
+                /* ATSC frequencies */
+
+                const VHF_START_NUM_ATSC = 1
+                const UHF_START_NUM_ATSC = 14
+
+                const VHF_FREQUENCIES_ATSC = [
+                    47, // 1
+                    57, // 2
+                    63, // 3
+                    69, // 4
+                    79, // 5
+                    85, // 6
+                    177, // 7
+                    183, // 8
+                    189, // 9
+                    195, // 10
+                    201, // 11
+                    207, // 12
+                    213 // 13
+                ]
+
+                const UHF_FREQUENCIES_ATSC = [
+                    473, // 14
+                    479, // 15
+                    485, // 16 
+                    491, // 17
+                    497, // 18
+                    503, // 19
+                    509, // 20
+                    515, // 21
+                    521, // 22
+                    527, // 23
+                    533, // 24
+                    539, // 25
+                    545, // 26
+                    551, // 27
+                    557, // 28
+                    563, // 29
+                    569, // 30
+                    575, // 31
+                    581, // 32
+                    587, // 33
+                    593, // 34
+                    599, // 35
+                    605, // 36
+                    611, // 37
+                    617, // 38
+                    623, // 39
+                    629, // 40
+                    635, // 41
+                    641, // 42
+                    647, // 43
+                    653, // 44
+                    659, // 45
+                    665, // 46
+                    671, // 47
+                    677, // 48
+                    683, // 49
+                    689, // 50
+                    695, // 51
+                    701, // 52
+                    707, // 53
+                    713, // 54
+                    719, // 55
+                    725, // 56
+                    731, // 57
+                    737, // 58
+                    743, // 59
+                    749, // 60
+                    755, // 61
+                    761, // 62
+                    767, // 63
+                    773, // 64
+                    779, // 65
+                    785, // 66
+                    791, // 67
+                    797, // 68
+                    803 // 69
+                ]
+
+                /* ISDB-T Frequencies */
+
+                const VHF_START_NUM_ISDB = 1
+                const VHF_START_NUM_ISDB_LATAM = 7
+                const UHF_START_NUM_ISDB = 13
+                const UHF_START_NUM_ISDB_LATAM = 14
+
+                const VHF_FREQUENCIES_ISDB = [
+                    93, // 1
+                    99, // 2
+                    105, // 3
+                    173, // 4
+                    179, // 5
+                    185, // 6
+                    191, // 7
+                    197, // 8
+                    203, // 9
+                    209, // 10
+                    215, // 11
+                    221 // 12
+                ]
+
+                const VHF_FREQUENCIES_ISDB_LATAM = [
+                    177.142857, // 7
+                    183.142857, // 8
+                    189.142857, // 9
+                    195.142857, // 10
+                    201.142857, // 11              
+                    207.142857, // 12               
+                    213.142857 // 13
+                ]
+
+                const UHF_FREQUENCIES_ISDB = [
+                    473.142857, // 14
+                    479.142857, // 15
+                    485.142857, // 16
+                    491.142857, // 17
+                    497.142857, // 18
+                    503.142857, // 19
+                    509.142857, // 20
+                    515.142857, // 21
+                    521.142857, // 22
+                    527.142857, // 23
+                    533.142857, // 24
+                    539.142857, // 25
+                    545.142857, // 26
+                    551.142857, // 27
+                    557.142857, // 28
+                    563.142857, // 29
+                    569.142857, // 30
+                    575.142857, // 31
+                    581.142857, // 32
+                    587.142857, // 33
+                    593.142857, // 34
+                    599.142857, // 35
+                    605.142857, // 36
+                    611.142857, // 37
+                    617.142857, // 38
+                    623.142857, // 39
+                    629.142857, // 40
+                    635.142857, // 41
+                    641.142857, // 42
+                    647.142857, // 43
+                    653.142857, // 44
+                    659.142857, // 45
+                    665.142857, // 46
+                    671.142857, // 47
+                    677.142857, // 48
+                    683.142857, // 49
+                    689.142857, // 50
+                    695.142857, // 51
+                    701.142857, // 52
+                    707.142857, // 53
+                    713.142857, // 54
+                    719.142857, // 55
+                    725.142857, // 56
+                    731.142857, // 57
+                    737.142857, // 58
+                    743.142857, // 59
+                    749.142857, // 60
+                    755.142857, // 61
+                    761.142857, // 62
+                    767.142857, // 63
+                    773.142857, // 64
+                    779.142857, // 65
+                    785.142857, // 66
+                    791.142857, // 67
+                    797.142857, // 68
+                    803.142857 // 69
+                ]
+
+                const setupManualScan = (vhf, uhf, vhf_start_num, uhf_start_num) => {
+                    $("#manual-scan-box > #channel").empty()
+
+                    for (let i = 0; i<vhf.length; i++) {
+                        $("#manual-scan-box > #channel").append(`<fast-option value="vhf_${i}">CH${(i+vhf_start_num).toString().padStart(2,"0")}</fast-option>`)   
+                    }
+
+                    for (let i = 0; i<uhf.length; i++) {
+                        $("#manual-scan-box > #channel").append(`<fast-option value="uhf_${i}">CH${(i+uhf_start_num).toString().padStart(2,"0")}</fast-option>`)   
+                    }
+
+                    $("#manual-scan-box > #frequency").val(vhf[0])
+
+                    $("#manual-scan-box > #channel").val("vhf_0")
+                }
+
+                $.get("/api/tuners").done((d) => {
+                    for (let i = 0; i<d.tuners.length; i++) {
+                        $("#dvb-setting > #adapter").append(`<fast-option value="${i}">${d.tuners[i]}</fast-option>`)
+                    }
+                })
+
+                var StreamsList = null
+
+                const updateStreamsList = () => {
+                    $("#streams").empty()
+                    StreamsList = null
+
+                    $("#toolbar > #delete").prop("disabled", true)
+                    $("#toolbar > #edit").prop("disabled", true)
+                    $("#toolbar > #activate").prop("disabled", true)
+                    $("#toolbar > #play").prop("disabled", true)
+                    $("#toolbar > #dvr").prop("disabled", true)
+                    $("#toolbar > #publish-url").prop("disabled", true)
+
+                    $.get("/api/streams").done((d) => {
+                        for (let i = 0; i<d.length; i++) {
+                            const stream = d[i]
+                            $("#streams").append(`<fast-option value="${i}">${stream.name} <fast-badge>${stream.type.toUpperCase()}</fast-badge></fast-option>`)
+                        }
+                        StreamsList = d
+                    })
+                }
+
+                $("#manual-scan-box > #channel").change(() => {
+                    const val = $("#manual-scan-box > #channel").val()
+                    const channel_id = parseInt(val.split("_")[1])
+                    switch (DTV_SYSTEM) {
+                        case "ATSC":
+                            if (val.startsWith("vhf_")) {
+                                $("#manual-scan-box > #frequency").val(VHF_FREQUENCIES_ATSC[channel_id])
+                            } else {
+                                $("#manual-scan-box > #frequency").val(UHF_FREQUENCIES_ATSC[channel_id])
+                            }
+                            break
+                        default:
+                            if (val.startsWith("vhf_")) {
+                                $("#manual-scan-box > #frequency").val(VHF_FREQUENCIES[channel_id])
+                            } else {
+                                $("#manual-scan-box > #frequency").val(UHF_FREQUENCIES[channel_id])
+                            }
+                            break
+                    }
+                })
+
+                $("#manual-scan-menu > #back").click(() => {
+                    $("#manual-scan-menu").prop("hidden", true)
+                })
+
+                $("#add-channels > #cancel").click(() => {
+                    $("#add-channels").prop("hidden", true)
+                })
+
+                var EditMode = false
+
+                $("#toolbar > #add").click(() => {                        
+                    EditMode = false
+                    $("#add-channels > #create").text("Create")
+                    $("#add-channels-options > #title").text("Add Stream")
+                    $("#add-channels").prop("hidden", false)
+                    $("#add-channels > #create").prop("disabled", true)
+                    $("#add-channels-options > #name").val('')
+                    $("#add-channels-options > #dtv-type").val('dtv')
+                    $('#dvb-setting > #dvb-msg').text('')
+                    $("#dvb-setting > #adapter").val('0')
+                    $("#scan-frequencies").val('vhf_uhf')
+                    $("#dtv-system").val('dvbt2')
+                    $("#isdb-system-type").prop('hidden', true)
+                    $("#isdb-system-type > #isdb-type").val('japan')
+                    $("#dvb2ip-setting > #dvb2ip-msg").text('')
+                    $("#dvb2ip-setting > #source").val('')
+                    $("#rtmp-setting > #passthrough").prop("checked", false)
+                    $("#pull-setting > #source").val('')
+                    $("#pull-setting > #realtime").prop("checked", false)
+                    $("#pull-setting > #passthrough").prop("checked", false)
+                    DTV_SYSTEM = "DVB-T2"
+                    DVBAppliedStreams = undefined
+                })
+
+                $("#toolbar > #edit").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $.ajax("/api/get_channel_info", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id                            
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        EditMode = true
+
+                        $("#add-channels-options > #dtv-type").val(d.type)
+                        $("#add-channels-options > #title").text("Edit Stream")
+                        $("#add-channels > #create").text("Apply")
+                        $("#add-channels > #create").prop("disabled", false)
+                        $("#add-channels").prop("hidden", false)
+                        $("#add-channels-options > #name").val(d.name)
+                        $('#dvb-setting > #dvb-msg').text('')
+                        $("#dvb2ip-setting > #dvb2ip-msg").text('')
+                        $("#scan-frequencies").val('vhf_uhf')
+                        $("#dtv-system").val('dvbt2')
+                        $("#isdb-system-type").prop('hidden', true)
+                        $("#isdb-system-type > #isdb-type").val('japan')                                                    
+                        
+                        if (d.type == "dtv") {
+                            DVBAppliedStreams = d.params.channels
+                            DTV_SYSTEM = d.params.system ? d.params.system : "DVB-T2"
+                            switch (DTV_SYSTEM) {
+                                case "DVB-T2":
+                                    $("#dtv-system").val('dvbt2')
+                                    break
+                                case "DVB-T":
+                                    $("#dtv-system").val('dvbt')
+                                    break
+                                case "ATSC":
+                                    $("#dtv-system").val('atsc')
+                                    break
+                                case "ISDB-T":
+                                    $("#dtv-system").val('isdb')
+                                    $("#isdb-system-type").prop('hidden', false)
+                                    $("#isdb-system-type > #isdb-type").val(d.params.isdb_type)
+                                    break
+                            }
+                            $("#dvb-setting > #adapter").val(d.params.tuner)                                                                            
+                            $('#dvb-setting > #dvb-msg').text(`${d.params.frequency}mhz / ${d.params.channels.length} channels selected`)
+                            $('#dvb-results > #multiplexes > #frequency').empty()
+                            $('#dvb-results > #multiplexes > #frequency').append(`<fast-option value="${d.params.frequency}">${d.params.frequency}mhz`)
+                            $('#dvb-results > #multiplexes > #frequency').val(d.params.frequency)
+                            $("#dvb-results > #channels > center > #additional-params").val(d.params.additional_params)
+                            
+                        } else if (d.type == "dvb2ip") {
+                            $("#dvb2ip-setting > #source").val(d.params.src)
+                            DVB2IPSelectedStream = d.params.src_id
+                            $("#dvb2ip-results > #dvb2ip-channels > center > #additional-params").val(d.params.additional_params)
+                        } else if (d.type == "rtmp") {
+                            $("#rtmp-setting > #passthrough").prop("checked", d.params.passthrough)
+                        } else if (d.type == "pull") {
+                            $("#pull-setting > #source").val(d.params.source)
+                            $("#pull-setting > #realtime").prop("checked", d.params.realtime)
+                            $("#pull-setting > #passthrough").prop("checked", d.params.passthrough)
+                        }
+                    })
+                })
+
+                var dvb_menu_page = 0;
+
+                $('#dvb-results > #cancel').click(() => {
+                    $('#dvb-results').prop("hidden", true)
+                })
+
+                var autoScanSaved = {}
+                var DTV_SYSTEM = "DVB-T2"
+                var DVBAppliedStreams;
+
+                const showMultiplexersList = () => {                                        
+                    if (Object.keys(autoScanSaved).length <= 0) {
+                        $('#dvb-setting > #dvb-msg').text("No channels found!")
+                        return
+                    }
+                    
+                    $("#dvb-setting > #recent-scan").prop("disabled", false)
+                    $('#dvb-results').prop("hidden", false)
+                    $('#dvb-results > #cancel').prop("hidden", false)
+                    $('#dvb-results > #back').prop("hidden", true)
+                    $('#dvb-results > #next').prop("hidden", false)
+                    $('#dvb-results > #apply').prop("hidden", true)
+
+                    dvb_menu_page = 0;
+                    
+                    $('#dvb-results > #multiplexes').prop("hidden", false)  
+                    $('#dvb-results > #channels').prop("hidden", true)
+
+                    for (let i in autoScanSaved) {
+                        $('#dvb-results > #multiplexes > #frequency').append(`<fast-option value="${i}">${i}mhz`)
+                    }
+                }
+                
+                var listBoxCH = []
+                var activeCheckbox = 0
+
+                const setupPage2DVB = () => {
+                    const freq = $('#dvb-results > #multiplexes > #frequency').val()
+                    $('#dvb-results > #apply').prop("disabled", true)
+                    activeCheckbox = 0
+
+                    $('#channels-listbox').empty()
+
+                    listBoxCH = []
+                    for (let i = 0; i<autoScanSaved[freq].length; i++) {
+                        const chn = autoScanSaved[freq][i]
+                        if (chn.streams.length > 0) {
+                            $('#channels-listbox').append(`<fast-checkbox id="ch${i}">${chn.name} ${chn.is_hd ? '<fast-badge color="dark" style="background-color: #ffffff;"><b>HD</b></fast-badge>' : ''}</fast-checkbox>`)
+                            $('#channels-listbox').append(`<fast-select id="ch${i}_vs" style="width: 225px; min-width: 0px;"></fast-select>&nbsp;`)
+                            $('#channels-listbox').append(`<fast-select id="ch${i}_as" style="width: 225px; min-width: 0px;"></fast-select>`)
+                            $('#channels-listbox').append('<br>')
+                            $(`#channels-listbox > #ch${i}`).change(() => {
+                                if ($(`#channels-listbox > #ch${i}`).prop("checked")) {
+                                    activeCheckbox++
+                                } else {
+                                    activeCheckbox--
+                                }
+                                if (activeCheckbox <= 0) {
+                                    $('#dvb-results > #apply').prop("disabled", true)
+                                } else {
+                                    $('#dvb-results > #apply').prop("disabled", false)
+                                }
+                            })
+                        }
+
+                        for (let j = 0; j<chn.streams.length; j++) {
+                            switch (chn.streams[j].type) {
+                                case "video":
+                                    $(`#channels-listbox > #ch${i}_vs`).append(`<fast-option value="${j}">${chn.streams[j].height}${chn.streams[j].interlace === "progressive" ? 'p' : 'i'} / ${chn.streams[j].interlace === "progressive" ? chn.streams[j].fps : chn.streams[j].fps*2}fps / ${chn.streams[j].codec} @ ${chn.streams[j].id}</fast-option>`)
+                                    break
+                                case "audio":
+                                    $(`#channels-listbox > #ch${i}_as`).append(`<fast-option value="${j}">${chn.streams[j].sample_rate} / ${chn.streams[j].channels} / ${Math.round(chn.streams[j].bitrate)}kbps / ${chn.streams[j].codec} @ ${chn.streams[j].id}</fast-option>`)
+                                    break
+                            }
+                        }
+                    }
+                }
+
+                const restartRequired = () => {
+                    $("#restart-required").prop("hidden", false)
+                    setTimeout(() => {
+                        document.location.reload()
+                    }, 5000) 
+                }
+
+                const updateMenuPageDVB = () => {
+                    $('#dvb-results > #multiplexes').prop("hidden", true)  
+                    $('#dvb-results > #channels').prop("hidden", true)
+
+                    $('#dvb-results > #cancel').prop("hidden", true)
+                    $('#dvb-results > #back').prop("hidden", true)
+                    $('#dvb-results > #next').prop("hidden", true)
+                    $('#dvb-results > #apply').prop("hidden", true)
+
+                    switch (dvb_menu_page) {
+                        case 0:
+                            $('#dvb-results > #multiplexes').prop("hidden", false)  
+                            $('#dvb-results > #cancel').prop("hidden", false)
+                            $('#dvb-results > #next').prop("hidden", false)
+                            break
+                        case 1:
+                            $('#dvb-results > #channels').prop("hidden", false)
+                            $('#dvb-results > #back').prop("hidden", false)
+                            $('#dvb-results > #apply').prop("hidden", false)                            
+
+                            setupPage2DVB()
+                            break
+                    }
+                }
+                $('#dvb-results > #next').click(() => {
+                    dvb_menu_page++
+                    updateMenuPageDVB()
+                })
+                $('#dvb-results > #back').click(() => {
+                    dvb_menu_page--
+                    updateMenuPageDVB()
+                })
+
+                $('#dvb-results > #apply').click(() => {
+                    const freq = $('#dvb-results > #multiplexes > #frequency').val()
+                    var strm_apply = []
+
+                    for (let i = 0; i<autoScanSaved[freq].length; i++) {
+                        if ($(`#channels-listbox > #ch${i}`).prop("checked")) {
+                            strm_apply.push({
+                                name: autoScanSaved[freq][i].name,
+                                id: autoScanSaved[freq][i].channel_id,
+                                is_hd: autoScanSaved[freq][i].is_hd,
+                                video: autoScanSaved[freq][i].streams[$(`#channels-listbox > #ch${i}_vs`).val()],
+                                audio: autoScanSaved[freq][i].streams[$(`#channels-listbox > #ch${i}_as`).val()]
+                            })
+                        }
+                    }
+
+                    $('#dvb-results').prop("hidden", true)
+                    DVBAppliedStreams = strm_apply
+                    $('#dvb-setting > #dvb-msg').text(`${freq}mhz / ${DVBAppliedStreams.length} channels selected`)
+                    if ($("#add-channels-options > #name").val().length <= 0) $("#add-channels-options > #name").val(`MUX ${freq}mhz`)
+                    $("#add-channels > #create").prop("disabled", false)
+                })
+
+                const autoScan = (adapter, pending_list, progress=0, bandwidth=8) => {
+                    const next_scan = pending_list.slice(1)
+                    $('#dvb-setting > #dvb-msg').text("")
+                    $("#add-channels > #create").prop("disabled", true)
+                    $("#dvb-setting > #recent-scan").prop("disabled", true)  
+                    $("#dvb-results > #channels > center > #additional-params").val('')
+                    
+                    DVBAppliedStreams = undefined
+                    $('#auto-scan-progress > #scan-progress').val(progress)
+                    $('#auto-scan-progress > #status').text(`${pending_list[0]}mhz / ${bandwidth}M / ${Object.keys(autoScanSaved).length} channels found`)
+                    $.ajax("/api/get_channels_by_frequency", {
+                        data: JSON.stringify({
+                            tuner: adapter,
+                            frequency: pending_list[0],
+                            bandwidth,
+                            system_type: DTV_SYSTEM
+                            //isdb_type: DTV_SYSTEM === "ISDB-T" ? $("#isdb-type") : undefined
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        if (d.channels.length > 0) {
+                            autoScanSaved[pending_list[0]] = d.channels
+                        }
+
+                        if (next_scan.length > 0) {
+                            autoScan(adapter, next_scan, ++progress, bandwidth)
+                        } else {
+                            $('#auto-scan-progress').prop("hidden", true)
+                            $('#dvb-results > #multiplexes > #frequency').empty()
+                            $('#dvb-results > #multiplexes > #frequency').val(0)
+
+                            showMultiplexersList()
+                        }
+                    })
+                }
+
+                $("#dvb-setting > #manual-scan").click(() => {
+                    switch (DTV_SYSTEM) {
+                        case "ATSC":
+                            $("#manual-scan-box > #bandwidth").val(6)
+                            setupManualScan(VHF_FREQUENCIES_ATSC, UHF_FREQUENCIES_ATSC, VHF_START_NUM_ATSC, UHF_START_NUM_ATSC)
+                            break
+                        default:
+                            $("#manual-scan-box > #bandwidth").val(8)
+                            setupManualScan(VHF_FREQUENCIES, UHF_FREQUENCIES, VHF_START_NUM, UHF_START_NUM)
+                            break
+                    }
+
+                    $("#manual-scan-menu").prop("hidden", false)
+                })
+
+                $("#dvb-setting > #recent-scan").click(showMultiplexersList)
+
+                $("#manual-scan-menu > #start").click(() => {
+                    $("#manual-scan-menu").prop("hidden", true)
+                    $('#auto-scan-progress').prop("hidden", false)
+                    $('#auto-scan-progress > #scan-progress').attr("max", 1)
+                    autoScanSaved = {}
+
+                    autoScan($("#dvb-setting > #adapter").val(), [$("#manual-scan-box > #frequency").val()], 0, parseInt($("#manual-scan-box > #bandwidth").val()))
+                })
+
+                $("#dvb-setting > #auto-scan").click(() => {
+                    var FREQUENCIES = VHF_FREQUENCIES.concat(UHF_FREQUENCIES)
+                    switch ($("#scan-frequencies").val()) {
+                        case "vhf":
+                            FREQUENCIES = VHF_FREQUENCIES
+                            break
+                        case "uhf":
+                            FREQUENCIES = UHF_FREQUENCIES
+                            break
+                    }
+
+                    switch (DTV_SYSTEM) {
+                        case "ATSC":
+                            FREQUENCIES = VHF_FREQUENCIES_ATSC.concat(UHF_FREQUENCIES_ATSC)
+                            switch ($("#scan-frequencies").val()) {
+                                case "vhf":
+                                    FREQUENCIES = VHF_FREQUENCIES_ATSC
+                                    break
+                                case "uhf":
+                                    FREQUENCIES = UHF_FREQUENCIES_ATSC
+                                    break
+                            }
+                            break
+                        case "ISDB-T":
+                            break
+                    }
+
+                    $('#auto-scan-progress').prop("hidden", false)
+                    $('#auto-scan-progress > #scan-progress').attr("max", FREQUENCIES.length-1)
+                    autoScanSaved = {}
+
+                    autoScan($("#dvb-setting > #adapter").val(), FREQUENCIES)
+                })
+
+                $("#dtv-system").change(() => {
+                    $("#dvb-setting > #recent-scan").prop("disabled", true)  
+                    $("#isdb-type").prop("hidden", true)
+                    switch ($("#dtv-system").val()) {
+                        case "dvbt2":
+                            DTV_SYSTEM = "DVB-T2"
+                            break
+                        case "dvbt":
+                            DTV_SYSTEM = "DVB-T"
+                            break
+                        case "atsc":
+                            DTV_SYSTEM = "ATSC"
+                            break
+                        case "isdb":
+                            $("#isdb-type").prop("hidden", false)
+                            DTV_SYSTEM = "ISDB-T"                            
+                            break
+                    }                    
+                })
+
+                $("#add-channels > #create").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")] ? $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value : undefined
+
+                    switch ($("#add-channels-options > #dtv-type").val()) {
+                        case "dtv":
+                            $.ajax(`/api/${EditMode ? "edit" : "add"}`, {
+                                data: JSON.stringify({
+                                    id: EditMode ? StreamsList[streamVal].id : undefined,
+                                    name: $("#add-channels-options > #name").val(),
+                                    type: "dtv",
+                                    tuner: parseInt($("#dvb-setting > #adapter").val()),
+                                    frequency: parseInt($('#dvb-results > #multiplexes > #frequency').val()),
+                                    system: DTV_SYSTEM,
+                                    channels: DVBAppliedStreams,
+                                    additional_params: $("#dvb-results > #channels > center > #additional-params").val()
+                                }),
+                                contentType: "application/JSON",
+                                type: "POST"
+                            }).done((d) => {
+                                $("#add-channels").prop("hidden", true)
+                                updateStreamsList()
+                            })
+                            break
+                        case "dvb2ip":
+                            $.ajax(`/api/${EditMode ? "edit" : "add"}`, {
+                                data: JSON.stringify({
+                                    id: EditMode ? StreamsList[streamVal].id : undefined,
+                                    name: $("#add-channels-options > #name").val(),
+                                    type: "dvb2ip",
+                                    source_address: $("#dvb2ip-setting > #source").val(),
+                                    source_id: $("#dvb2ip-results > #dvb2ip-channels > #channels-list > fieldset > #channel").val(),
+                                    additional_params: $("#dvb2ip-results > #dvb2ip-channels > center > #additional-params").val()
+                                }),
+                                contentType: "application/JSON",
+                                type: "POST"
+                            }).done((d) => {
+                                $("#add-channels").prop("hidden", true)
+                                updateStreamsList()
+                            })
+                            break
+                        case "rtmp":
+                            $.ajax(`/api/${EditMode ? "edit" : "add"}`, {
+                                data: JSON.stringify({
+                                    id: EditMode ? StreamsList[streamVal].id : undefined,
+                                    name: $("#add-channels-options > #name").val(),
+                                    type: "rtmp",
+                                    passthrough: $("#rtmp-setting > #passthrough").prop("checked")
+                                }),
+                                contentType: "application/JSON",
+                                type: "POST"
+                            }).done((d) => {
+                                $("#add-channels").prop("hidden", true)
+                                updateStreamsList()
+                            })
+                            break
+                        case "pull":
+                            $.ajax(`/api/${EditMode ? "edit" : "add"}`, {
+                                data: JSON.stringify({
+                                    id: EditMode ? StreamsList[streamVal].id : undefined,
+                                    name: $("#add-channels-options > #name").val(),
+                                    type: "pull",
+                                    source: $("#pull-setting > #source").val(),
+                                    realtime: $("#pull-setting > #realtime").prop("checked"),
+                                    passthrough: $("#pull-setting > #passthrough").prop("checked")
+                                }),
+                                contentType: "application/JSON",
+                                type: "POST"
+                            }).done((d) => {
+                                $("#add-channels").prop("hidden", true)
+                                updateStreamsList()
+                            })
+                            break
+                    }                    
+                })
+
+                $("#add-channels-options > #name").on("input", () => {
+                    switch ($("#add-channels-options > #dtv-type").val()) {
+                        case "dtv":                            
+                            $("#add-channels > #create").prop("disabled", DVBAppliedStreams ? $("#add-channels-options > #name").val().length <= 0 : true)
+                            break
+                        case "dvb2ip":
+                            $("#add-channels > #create").prop("disabled", DVB2IPSelectedStream !== -1 ? $("#add-channels-options > #name").val().length <= 0 : true)
+                            break
+                        case "rtmp":
+                            $("#add-channels > #create").prop("disabled", $("#add-channels-options > #name").val().length <= 0)
+                            break
+                        case "pull":
+                            $("#add-channels > #create").prop("disabled", $("#add-channels-options > #name").val().length <= 0 || $("#pull-setting > #source").val().length <= 0)
+                            break
+                    }
+                })
+
+                $("#pull-setting > #source").on("input", () => {                            
+                    $("#add-channels > #create").prop("disabled", $("#add-channels-options > #name").val().length <= 0 || $("#pull-setting > #source").val().length <= 0)
+                })
+
+                $("#dvb2ip-setting > #scan").click(() => {
+                    $.ajax(`/api/dvb2ip_get`, {
+                        data: JSON.stringify({
+                            src: $("#dvb2ip-setting > #source").val()
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        if (d.channels.length <= 0) {
+                            $("#dvb2ip-setting > #dvb2ip-msg").text('Unable to get channels from a DVB2IP device.') 
+                            return
+                        }
+                        $("#dvb2ip-channels > #channels-list > fieldset > #channel").empty()
+                        $("#dvb2ip-channels > #channels-list > fieldset > #channel").val(0)
+                        $("#dvb2ip-results > #dvb2ip-channels > center > #additional-params").val('')
+
+                        $("#dvb2ip-results").prop("hidden", false)
+                        for (let i = 0; i<d.channels.length; i++) {
+                            const channel = d.channels[i]
+                            $("#dvb2ip-channels > #channels-list > fieldset > #channel").append(`<fast-option value=${channel.stream_id}>${channel.name}</fast-option<`)
+                        }
+                    })
+                })
+
+                var DVB2IPSelectedStream = -1
+
+                $("#dvb2ip-results > #cancel").click(() => {
+                    $("#dvb2ip-results").prop("hidden", true)
+                })
+
+                $("#dvb2ip-results > #apply").click(() => {
+                    DVB2IPSelectedStream = $("#dvb2ip-channels > #channels-list > fieldset > #channel").val()
+                    const selStreamName = $(`#dvb2ip-channels > #channels-list > fieldset > #channel > [value=${DVB2IPSelectedStream}]`).text()
+
+                    $("#dvb2ip-setting > #dvb2ip-msg").text(`Selected DVB2IP channel: ${selStreamName}`) 
+                    if ($("#add-channels-options > #name").val().length <= 0) $("#add-channels-options > #name").val(selStreamName)
+                    
+                    $("#add-channels > #create").prop("disabled", false)
+                    $("#dvb2ip-results").prop("hidden", true)
+                })
+
+                $("#streams").click(() => {
+                    if ($("#streams").prop("selectedIndex") === -1) return
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $("#toolbar > #delete").prop("disabled", false)
+                    $("#toolbar > #edit").prop("disabled", false)
+                    $("#toolbar > #play").prop("disabled", false)
+                    $("#toolbar > #dvr").prop("disabled", !StreamsList[streamVal].active)
+
+                    if (StreamsList[streamVal].type !== 'rtmp' && StreamsList[streamVal].active === true) {
+                        $("#toolbar > #activate").text("Deactivate")
+                    } else {
+                        $("#toolbar > #activate").text("Activate")
+                    }
+
+                    if (StreamsList[streamVal].type === "rtmp") {
+                        $("#toolbar > #activate").prop("disabled", true)
+                        $("#toolbar > #publish-url").prop("disabled", false)
+                    } else {
+                        $("#toolbar > #activate").prop("disabled", false)
+                        $("#toolbar > #publish-url").prop("disabled", true)
+                    }
+                })
+
+                $("#toolbar > #activate").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")] ? $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value : undefined
+                    $("#streams").prop("disabled", true)
+                    $("#toolbar > #activate").prop("disabled", true)
+                    $.ajax("/api/active", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id,
+                            active: !StreamsList[streamVal].active
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        if (StreamsList[streamVal].active) {
+                            $("#toolbar > #activate").text("Activate")
+                            $("#toolbar > #dvr").prop("disabled", true)
+                        } else {
+                            $("#toolbar > #activate").text("Deactivate")
+                            $("#toolbar > #dvr").prop("disabled", false)
+                        }
+
+                        StreamsList[streamVal].active = !StreamsList[streamVal].active
+                        $("#streams").prop("disabled", false)
+                        $("#toolbar > #activate").prop("disabled", false)
+                    }).fail(() => {
+                        $("#streams").prop("disabled", false)
+                        $("#toolbar > #activate").prop("disabled", false)
+                    })
+                })
+
+                $("#toolbar > #publish-url").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $.ajax("/api/rtmp_publish_url", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        $("#toolbar > #publish-url").text("Copied to clipboard")
+                        setTimeout(() => $("#toolbar > #publish-url").text("Copy publish url to clipboard"), 3000)
+                        navigator.clipboard.writeText(d.publish_url)
+                    })
+                })
+
+                $("#add-channels-options > #dtv-type").change(() => {
+                    $("#dvb-setting").prop("hidden", true)
+                    $("#dvb2ip-setting").prop("hidden", true)
+                    $("#rtmp-setting").prop("hidden", true)            
+                    $("#pull-setting").prop("hidden", true)        
+                    switch ($("#add-channels-options > #dtv-type").val()) {
+                        case "dtv":
+                            $("#dvb-setting").prop("hidden", false)                            
+                            $("#add-channels > #create").prop("disabled", DVBAppliedStreams ? $("#add-channels-options > #name").val().length <= 0 : true)
+                            break
+                        case "dvb2ip":
+                            $("#dvb2ip-setting").prop("hidden", false)
+                            $("#add-channels > #create").prop("disabled", DVB2IPSelectedStream !== -1 ? $("#add-channels-options > #name").val().length <= 0 : true)
+                            break
+                        case "rtmp":
+                            $("#rtmp-setting").prop("hidden", false)
+                            $("#add-channels > #create").prop("disabled", $("#add-channels-options > #name").val().length <= 0)
+                            break
+                        case "pull":
+                            $("#pull-setting").prop("hidden", false)
+                            $("#add-channels > #create").prop("disabled", $("#add-channels-options > #name").val().length <= 0 || $("#pull-setting > #source").val().length <= 0)
+                            break
+                    }
+                })
+
+                $("#delete-msg > #no").click(() => {
+                    $("#delete-msg").prop("hidden", true)
+                })
+
+                $("#delete-msg > #yes").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $("#delete-msg > #yes").prop("disabled", true)
+                    $.ajax("/api/delete", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        $("#delete-msg").prop("hidden", true)
+                        $("#delete-msg > #yes").prop("disabled", false)
+                        updateStreamsList()
+                    }).fail(() => {
+                        $("#delete-msg > #yes").prop("disabled", false)
+                    })                                   
+                })
+
+                $("#toolbar > #delete").click(() => {
+                    $("#delete-msg").prop("hidden", false)
+                })
+                
+
+                const updateDTVStatus = () => {
+                    $.get("/api/status").done((d) => {
+                        $("#tuner-status-box > #tuner-status").empty()
+                        for (let i = 0; i<d.length; i++) {
+                            $("#tuner-status-box > #tuner-status").append(`<h4>${d[i].name}</h4>`)
+                            $("#tuner-status-box > #tuner-status").append(`<p><b>${d[i].status}</b></p>`)
+                            $("#tuner-status-box > #tuner-status").append(`<p><b>${d[i].current}</b></p>`)
+                        }
+                        setTimeout(updateDTVStatus, 1000)
+                    })
+                }
+
+                setTimeout(updateDTVStatus, 1000)
+                
+                $("#toolbar > #tuner-status").click(() => {
+                    $("#tuner-status-box").prop("hidden", false)
+                })
+
+                $("#tuner-status-box > #close").click(() => {
+                    $("#tuner-status-box").prop("hidden", true)
+                })
+
+                $("#toolbar > #settings").click(() => {
+                    $.get("/api/config").done((d) => {
+                        $("#settings-box").prop("hidden", false)
+                        $("#settings-box > #settings > #data").val(JSON.stringify(d, null, 4))
+                    })
+                })
+
+                $("#settings-box > #apply").click(() => {
+                    $.ajax("/api/config", {
+                        data: $("#settings-box > #settings > #data").val(),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        restartRequired()
+                    })
+                })
+
+                $("#settings-box > #cancel").click(() => {
+                    $("#settings-box").prop("hidden", true)
+                })
+
+                $("#toolbar > #shutdown").click(() => {
+                    $("#shutdown-msg").prop("hidden", false)
+                })
+
+                $("#shutdown-msg > #no").click(() => {
+                    $("#shutdown-msg").prop("hidden", true)
+                })
+
+                $("#shutdown-msg > #yes").click(() => {
+                    $.ajax("/api/shutdown", {type: "POST"}).done(() => {
+                        $("#shutdown-msg").prop("hidden", true)
+                        $("#shutdown-ok").prop("hidden", false)
+                    })
+                })
+                
+                const playVideo = async (url) => {                   
+                    try {
+                        $("#video-player").prop("hidden", false)
+                        await window.player.load(url);
+                    } catch (e) {
+                        alert(e)
+                    }
+                }
+
+                $("#video-player > #close").click(() => {
+                    $("#player")[0].pause()
+                    $("#video-player").prop("hidden", true)
+                })
+                
+                $("#toolbar > #play").click(() => {
+                    if (!window.player || !window.ui) return
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    if (StreamsList[streamVal].channels.length <= 1) {
+                        playVideo(StreamsList[streamVal].channels[0].playback_url)
+                    } else {
+                        $("#video-player-list").prop("hidden", false)
+                        $("#video-player-list > #list-content > #program").empty()
+                        $("#video-player-list > #list-content > #program").val("")
+                        
+                        for (let i = 0; i<StreamsList[streamVal].channels.length; i++) {
+                            $("#video-player-list > #list-content > #program").append(`<fast-option value="${StreamsList[streamVal].channels[i].playback_url}">${StreamsList[streamVal].channels[i].name}</fast-option>`)
+                        }
+                    }
+                })
+
+                $("#video-player-list > #back").click(() => {
+                    $("#video-player-list").prop("hidden", true)
+                })
+
+                $("#video-player-list > #watch").click(() => {
+                    $("#video-player-list").prop("hidden", true)
+                    playVideo($("#video-player-list > #list-content > #program").val())
+                })
+
+                const updateDVRStatus = (base=true, id=-1) => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $.ajax("/api/dvr/status", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id,
+                            program: id !== -1 ? id : StreamsList[streamVal].channels[0].id       
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done((d) => {
+                        if (d.is_recording) {
+                            $("#dvr-menu > #start").prop("disabled", true)
+                            $("#dvr-menu > #stop").prop("disabled", false)
+                        } else {
+                            $("#dvr-menu > #start").prop("disabled", false)
+                            $("#dvr-menu > #stop").prop("disabled", true)
+                        }
+
+                        $("#dvr-menu > #play").prop("disabled", true)
+                        $("#dvr-menu > #delete").prop("disabled", true)
+
+                        $("#dvr-menu > #dvr-list > #list").empty()
+                        $("#dvr-menu > #dvr-list > #list").attr("selectedIndex", 0)
+
+                        for (let i = 0; i<d.recordings.length; i++) {
+                            const recording = d.recordings[i]
+                            console.log(d.recordings)
+                            $("#dvr-menu > #dvr-list > #list").append(`<fast-option value="${recording.dvr_id}">${recording.created_on}</fast-option>`)
+                        }
+
+                        if (base) {
+                            $("#dvr-menu > #channel").empty()
+                            $("#dvr-menu > #channel").val("")
+
+                            for (let i = 0; i<StreamsList[streamVal].channels.length; i++) {
+                                const channel = StreamsList[streamVal].channels[i]
+                                $("#dvr-menu > #channel").append(`<fast-option value="${channel.id}">${channel.name}</fast-option>`)
+                            }
+                        }
+
+                        $("#dvr-menu").prop("hidden", false)
+                    })
+                }
+
+                var c;
+
+                $("#dvr-menu > #channel").change((e) => {
+                    if (!c) {
+                        c = () => {
+                            console.log(e)
+                            c = null
+
+                            updateDVRStatus(false, $("#dvr-menu > #channel").val())
+                        }
+
+                        console.log("c")
+                        setTimeout(c, 100)
+                    }
+                })
+
+                $("#dvr-menu > #start").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $("#dvr-menu > #start").prop("disabled", true)
+                    $("#dvr-menu > #stop").prop("disabled", true)
+
+                    $("#dvr-menu > #play").prop("disabled", true)
+                    $("#dvr-menu > #delete").prop("disabled", true)
+
+                    $.ajax("/api/dvr/start", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id,
+                            program: $("#dvr-menu > #channel").val()                            
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done(() => updateDVRStatus(false, $("#dvr-menu > #channel").val())).fail(() => updateDVRStatus(false, $("#dvr-menu > #channel").val()))
+                })
+
+                $("#dvr-menu > #stop").click(() => {
+                    const streamVal = $("#streams > fast-option")[$("#streams").prop("selectedIndex")].value
+                    $("#dvr-menu > #start").prop("disabled", true)
+                    $("#dvr-menu > #stop").prop("disabled", true)
+
+                    $("#dvr-menu > #play").prop("disabled", true)
+                    $("#dvr-menu > #delete").prop("disabled", true)
+
+                    $.ajax("/api/dvr/stop", {
+                        data: JSON.stringify({
+                            id: StreamsList[streamVal].id,
+                            program: $("#dvr-menu > #channel").val()                          
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done(() => updateDVRStatus(false, $("#dvr-menu > #channel").val())).fail(() => updateDVRStatus(false, $("#dvr-menu > #channel").val()))
+                })
+
+                $("#dvr-menu > #dvr-list > #list").click(() => {
+                    if ($("#dvr-menu > #dvr-list > #list").prop("selectedIndex") === -1) return
+                    $("#dvr-menu > #play").prop("disabled", false)
+                    $("#dvr-menu > #delete").prop("disabled", false)
+                })
+
+                $("#dvr-menu > #delete").click(() => {
+                    $.ajax("/api/dvr/delete", {
+                        data: JSON.stringify({
+                            id: $("#dvr-menu > #dvr-list > #list > fast-option")[$("#dvr-menu > #dvr-list > #list").prop("selectedIndex")].value                      
+                        }),
+                        contentType: "application/JSON",
+                        type: "POST"
+                    }).done(() => updateDVRStatus(false, $("#dvr-menu > #channel").val())).fail(() => updateDVRStatus(false, $("#dvr-menu > #channel").val()))
+                })
+
+                $("#dvr-menu > #close").click(() => {
+                    $("#dvr-menu").prop("hidden", true)
+                })
+
+                $("#dvr-menu > #play").click(() => {
+                    $("#dvr-menu").prop("hidden", true)
+                    playVideo(`/dvr/${$("#dvr-menu > #dvr-list > #list > fast-option")[$("#dvr-menu > #dvr-list > #list").prop("selectedIndex")].value}/index.m3u8`)
+                })
+
+                $("#toolbar > #dvr").click(() => {
+                    updateDVRStatus()
+                })
+
+                updateStreamsList()
+            })
+
+            $(document).bind("shaka-ui-loaded", () => {
+                const video = $("#player")[0];
+                const ui = video['ui'];
+                const controls = ui.getControls();
+                const player = controls.getPlayer();
+              
+                player.configure({
+                    streaming: {
+                        bufferingGoal: 10
+                    }
+                });
+
+                // Attach player and ui to the window to make it easy to access in the JS console.
+                window.player = player;
+                window.ui = ui;
+            });
+        </script>
+    </body>
+</html>
