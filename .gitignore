@@ -1,5 +1,6 @@
 upstream.db
 node_modules/
-# streams/
+streams/
+dvr/
 config.json
 package-lock.json
