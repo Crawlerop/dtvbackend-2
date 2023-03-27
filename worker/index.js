@@ -8,7 +8,6 @@ const crypto = require("crypto")
 const fs = require("fs/promises")
 const fs_sync = require("fs")
 const os = require("os")
-const path = require("path")
 
 const streams = require("../db/streams")
 
