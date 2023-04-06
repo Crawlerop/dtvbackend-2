@@ -722,8 +722,9 @@ module.exports = {
                 try {
                     const n_res = await nominatim.reverse({lat: geoip_data.ll[0], lon: geoip_data.ll[1], zoom: 17})
 
-                    if (!n_res.error) {
+                    if (!n_res.error && n_res.address.postcode) {
                         const zip_code = n_res.address.postcode
+                        //console.log(n_res)
                         switch (geoip_data.country) {
                             case "ID":
                                 for (d in dtv_postcode) {
