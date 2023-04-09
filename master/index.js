@@ -456,7 +456,7 @@ app.post("/api/edit", async (req, res) => {
 
             jobs.removeDTVJobs(req.body.id, stream[0])
 
-            if (stream[0].active) addDTVJobs(req.body.id, req.body.type, {
+            if (stream[0].active) jobs.addDTVJobs(req.body.id, req.body.type, {
                 src: req.body.source_address,
                 src_id: req.body.source_id,
                 additional_params: req.body.additional_params
@@ -478,7 +478,7 @@ app.post("/api/edit", async (req, res) => {
 
             jobs.removeDTVJobs(req.body.id, stream[0])
 
-            if (stream[0].active) addDTVJobs(req.body.id, req.body.type, {
+            if (stream[0].active) jobs.addDTVJobs(req.body.id, req.body.type, {
                 tuner: req.body.tuner,
                 frequency: req.body.frequency,
                 channels: req.body.channels,
@@ -500,7 +500,7 @@ app.post("/api/edit", async (req, res) => {
 
             jobs.removeDTVJobs(req.body.id, stream[0])
             
-            if (stream[0].active) addDTVJobs(req.body.id, req.body.type, {
+            if (stream[0].active) jobs.addDTVJobs(req.body.id, req.body.type, {
                 source: req.body.source,
                 realtime: req.body.realtime ? req.body.realtime : false,
                 passthrough: req.body.passthrough ? req.body.passthrough : false
