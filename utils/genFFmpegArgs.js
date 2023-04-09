@@ -488,8 +488,8 @@ module.exports = {
                     args.push("0")
                 }
 
-                args.push(`-b_ref_mode:v:${i}`)
-                args.push("middle")
+                //args.push(`-b_ref_mode:v:${i}`)
+                //args.push("middle")
 
                 args.push("-a53cc")
                 args.push("false")
