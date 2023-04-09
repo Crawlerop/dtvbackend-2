@@ -527,7 +527,7 @@ app.post("/api/get_channels_by_frequency", async (req, res) => {
         }
 
         if (!found) throw new Error("no channels were found at this frequency")
-        const probe_streams = JSON.parse((await check_output(config.ffmpeg.replace(/mpeg/g, "probe"), "-loglevel quiet -print_format json -show_error -probesize 512M -show_format -show_programs -".split(" "), 0, dtv_chunk)).toString("utf-8")).programs
+        const probe_streams = JSON.parse((await check_output(config.ffmpeg.replace(/mpeg/g, "probe"), "-loglevel quiet -print_format json -show_error -probesize 1024M -analyzeduration 60000000 -show_format -show_programs -".split(" "), 0, dtv_chunk)).toString("utf-8")).programs
 
         var channels_temp = []
         for (let i = 0; i<probe_streams.length; i++) {
@@ -541,8 +541,8 @@ app.post("/api/get_channels_by_frequency", async (req, res) => {
                     if (stream.height >= 720) is_hd = true
                     program_streams.push({
                         type: "video", 
-                        width: stream.width, 
-                        height: stream.height,
+                        width: stream.width > 0 ? stream.width : 720, 
+                        height: stream.height > 0 ? stream.height : 576,
                         fps: eval(stream.avg_frame_rate),
                         interlace: stream.field_order,
                         id: eval(stream.id),
