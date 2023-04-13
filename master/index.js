@@ -698,53 +698,57 @@ module.exports = {
             }
 
             app.listen(PORT, "127.0.0.1", async () => {        
-                const geoip_res = await axios.get("https://dtvtools.ucomsite.my.id/geoip/json")
-                const geoip_data = geoip_res.data
-
-                geo_params = {
-                    country: geoip_data.country,
-                    region_id: null,
-                    dtv_area: null
-                }
-
-                /*
-                manifest_data = {
-                    name: config.name,
-                    hostname: os.hostname(),
-                    server_uptime: os.uptime(),
-                    os_name: `${os.type()} ${os.release()}`,
-                    num_streams: (await streams.query()).length,
-                    country: geoip_data.country,
-                    region_id: null
-                }
-                */
-
                 try {
-                    const n_res = await nominatim.reverse({lat: geoip_data.ll[0], lon: geoip_data.ll[1], zoom: 17})
+                    const geoip_res = await axios.get("https://dtvtools.ucomsite.my.id/geoip/json")
+                    const geoip_data = geoip_res.data
 
-                    if (!n_res.error && n_res.address.postcode) {
-                        const zip_code = n_res.address.postcode
-                        //console.log(n_res)
-                        switch (geoip_data.country) {
-                            case "ID":
-                                for (d in dtv_postcode) {
-                                    if (zip_code.slice(0,3) == d) {                                
-                                        geo_params.region_id = dtv_postcode[d]
-                                        geo_params.dtv_area = getRegion(geoip_data.ll[0], geoip_data.ll[1])
-                                        break
+                    geo_params = {
+                        country: geoip_data.country,
+                        region_id: null,
+                        dtv_area: null
+                    }
+
+                    /*
+                    manifest_data = {
+                        name: config.name,
+                        hostname: os.hostname(),
+                        server_uptime: os.uptime(),
+                        os_name: `${os.type()} ${os.release()}`,
+                        num_streams: (await streams.query()).length,
+                        country: geoip_data.country,
+                        region_id: null
+                    }
+                    */
+
+                    try {
+                        const n_res = await nominatim.reverse({lat: geoip_data.ll[0], lon: geoip_data.ll[1], zoom: 17})
+
+                        if (!n_res.error && n_res.address.postcode) {
+                            const zip_code = n_res.address.postcode
+                            //console.log(n_res)
+                            switch (geoip_data.country) {
+                                case "ID":
+                                    for (d in dtv_postcode) {
+                                        if (zip_code.slice(0,3) == d) {                                
+                                            geo_params.region_id = dtv_postcode[d]
+                                            geo_params.dtv_area = getRegion(geoip_data.ll[0], geoip_data.ll[1])
+                                            break
+                                        }
                                     }
-                                }
-                                break
-                            default:
-                                geo_params.region_id = `${n_res.address["ISO3166-2-lvl4"]}/${n_res.address.city.toUpperCase()}`
-                                geo_params.dtv_area = n_res.address.city
-                                break
+                                    break
+                                default:
+                                    geo_params.region_id = `${n_res.address["ISO3166-2-lvl4"]}/${n_res.address.city.toUpperCase()}`
+                                    geo_params.dtv_area = n_res.address.city
+                                    break
+                            }
                         }
+                    } catch (e) {
+                        console.trace(e)
                     }
                 } catch (e) {
                     console.trace(e)
                 }
-                
+                    
                 console.log(`Live on port ${PORT}`)
                 rtmp.start()
 
