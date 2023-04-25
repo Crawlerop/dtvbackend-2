@@ -81,6 +81,7 @@ module.exports = {
             cur_proc.on("message", (d) => {
                 if (d.retry) {
                     console.log("stream has encountered an error, retrying.")  
+                    console.trace(d)
                     try {              
                         StreamDTVJobs[d.stream_id].kill("SIGKILL")
                     } catch (e) {}
