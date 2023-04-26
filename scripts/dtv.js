@@ -7,6 +7,7 @@ const fs = require("fs")
 const fs_p = require("fs/promises")
 const path = require("path")
 const os = require("os")
+const { assert } = require("console")
 
 //var passed_params = {}
 //var is_ready = false
@@ -38,6 +39,9 @@ const QuitCheck = () => {
 
 const RESTART_EACH_STREAMS = true
 const REPEAT_DETECT_STALLS = true
+
+const MUX_USE_UDP = false
+const UDP_PORT_INDEX = 34000
 
 setInterval(QuitCheck, 2000);
 
@@ -160,6 +164,8 @@ RunSignal.once("run", async (params) => {
 
     const LS_SOCKET = path.join(__dirname, `/../sock/${params.stream_id}`)
 
+    var forkedOnce;
+
     for (let i = 0; i<params.channels.length; i++) {
         const channel = JSON.parse(JSON.stringify(params.channels[i]))
         const dtv_key = `${params.frequency}-${channel.id}`
@@ -205,8 +211,11 @@ RunSignal.once("run", async (params) => {
         const tsp_fork_prm = ["-y", "-loglevel", "repeat+level+error", "-probesize", "32", "-analyzeduration", "0"].concat(await ffmp_args.genSingle(params.dtv_use_fork ? "-" : `unix:${LS_SOCKET}`, current_rendition, streams, out_folder, params.hls_settings, -1, (channel.audio && params.dtv_ignore_map.indexOf(dtv_key) === -1) ? channel.audio.id : -1, audio_filters, passed_params.dtv_use_fork ? true : false, used_watermark, params.do_scale ? do_nvdec_scale : false, do_hw_decoding))
         
         if (passed_params.dtv_use_fork) {
-            tsp_args.push("-P")
-            tsp_args.push("fork")    
+            if (!MUX_USE_UDP || !forkedOnce) {
+                tsp_args.push("-P")
+                tsp_args.push("fork")    
+                forkedOnce = true
+            }
 
             //tsp_args.push("--nowait")
 
@@ -240,22 +249,42 @@ RunSignal.once("run", async (params) => {
                     throw new Error(`Invalid output protocol: ${params.use_protocol}`)
                 }
             } else {
-                if (RESTART_EACH_STREAMS) {
-                    //tsp_args.push(`node ${path.join(__dirname, "/cmds")}/repeat.js "${channel.name}" ${params.ffmpeg} -progress - -nostats ${tsp_fork_prm.join(" ")}`)
-                    //tsp_args.push(`tsp -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
-                    //console.log(`${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
-                    if (!REPEAT_DETECT_STALLS) {
-                        //tsp_args.push(`tsp --buffer-size-mb ${DEMUX_FORK_BUFFER} --receive-timeout 45000 --verbose -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
-                        tsp_args.push(`tsp -P zap -i ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
-                    } else {
-                        //tsp_args.push(`tsp --buffer-size-mb ${DEMUX_FORK_BUFFER} --receive-timeout 45000 --verbose -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat4.js "${channel.name}" ${channel.video.fps >= 30 ? (channel.video.fps / 2) : channel.video.fps} ${params.ffmpeg} -stats_period 2 -progress - -nostats ${tsp_fork_prm.join(" ")}`)
-                        tsp_args.push(`tsp -P zap -i ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat4.js "${channel.name}" ${channel.video.fps >= 30 ? (channel.video.fps / 2) : channel.video.fps} $PPID ${params.frequency} ${channel.id} "${out_folder}" ${params.ffmpeg} -stats_period 2 -progress - -nostats ${tsp_fork_prm.join(" ")}`)
+                var PORT_USED = UDP_PORT_INDEX
+
+                if (MUX_USE_UDP) {
+                    while (PORT_USED <= 65535) {
+                        const PORT_URL = path.join(os.tmpdir(), `dtv-port-${PORT_USED}`)
+
+                        if (fs.existsSync(PORT_URL)) {
+                            PORT_USED += 100
+                            continue
+                        }
+
+                        break
                     }
-                    //tsp_args.push(`python ${path.join(__dirname, "/cmds")}/repeat.py "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
+
+                    assert(PORT_USED <= 65535)
+                }
+                
+                if (MUX_USE_UDP) {
                 } else {
-                    //tsp_args.push(`${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
-                    //tsp_args.push(`tsp -P zap ${channel.id} | ${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
-                    tsp_args.push(`tsp --verbose -P zap -i ${channel.id} | ${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
+                    if (RESTART_EACH_STREAMS) {
+                        //tsp_args.push(`node ${path.join(__dirname, "/cmds")}/repeat.js "${channel.name}" ${params.ffmpeg} -progress - -nostats ${tsp_fork_prm.join(" ")}`)
+                        //tsp_args.push(`tsp -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
+                        //console.log(`${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
+                        if (!REPEAT_DETECT_STALLS) {
+                            //tsp_args.push(`tsp --buffer-size-mb ${DEMUX_FORK_BUFFER} --receive-timeout 45000 --verbose -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
+                            tsp_args.push(`tsp -P zap -i ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat2.js "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
+                        } else {
+                            //tsp_args.push(`tsp --buffer-size-mb ${DEMUX_FORK_BUFFER} --receive-timeout 45000 --verbose -P zap ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat4.js "${channel.name}" ${channel.video.fps >= 30 ? (channel.video.fps / 2) : channel.video.fps} ${params.ffmpeg} -stats_period 2 -progress - -nostats ${tsp_fork_prm.join(" ")}`)
+                            tsp_args.push(`tsp -P zap -i ${channel.id} | node ${path.join(__dirname, "/cmds")}/repeat4.js "${channel.name}" ${channel.video.fps >= 30 ? (channel.video.fps / 2) : channel.video.fps} $PPID ${params.frequency} ${channel.id} "${out_folder}" ${params.ffmpeg} -stats_period 2 -progress - -nostats ${tsp_fork_prm.join(" ")}`)
+                        }
+                        //tsp_args.push(`python ${path.join(__dirname, "/cmds")}/repeat.py "${channel.name}" '${params.ffmpeg} ${tsp_fork_prm.join(" ")}'`)
+                    } else {
+                        //tsp_args.push(`${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
+                        //tsp_args.push(`tsp -P zap ${channel.id} | ${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
+                        tsp_args.push(`tsp --verbose -P zap -i ${channel.id} | ${params.ffmpeg} ${tsp_fork_prm.join(" ")}`)
+                    }
                 }
             }
         } else {
