@@ -373,6 +373,7 @@ app.post("/api/add", async (req, res) => {
                     frequency: req.body.frequency,
                     channels: req.body.channels,
                     system: req.body.system ? req.body.system : "DVB-T2",
+                    bandwidth: req.body.bandwidth ? req.body.bandwidth : 8,
                     additional_params: req.body.additional_params
                 }
             })
@@ -472,6 +473,7 @@ app.post("/api/edit", async (req, res) => {
                     frequency: req.body.frequency,
                     channels: req.body.channels,
                     system: req.body.system ? req.body.system : "DVB-T2",
+                    bandwidth: req.body.bandwidth ? req.body.bandwidth : 8,
                     additional_params: req.body.additional_params
                 })
             }).where("stream_id", '=', req.body.id)

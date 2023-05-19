@@ -54,6 +54,7 @@ module.exports = {
                     dtv_ignore_map: config.dtv_ignore_map,
                     dtv_force_hd: config.dtv_force_hd,
                     system: params.system ? params.system : "DVB-T2",
+                    bandwidth: params.bandwidth ? params.bandwidth : 8,
                     watermark: config.watermark,
                     watermark_ignore_streams: config.watermark_ignore_streams,
                     pathname: path.resolve(__dirname + "/../"),

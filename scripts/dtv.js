@@ -48,6 +48,7 @@ process.on('SIGINT', () => {
         frequency: passed_params.frequency,
         channels: passed_params.channels,
         system: passed_params.system,
+        bandwidth: passed_params.bandwidth,
         additional_params: passed_params.additional_params
     }})
 
@@ -72,6 +73,7 @@ ExecSignal.once("exec", (args, folders) => {
                 frequency: passed_params.frequency,
                 channels: passed_params.channels,
                 system: passed_params.system,
+                bandwidth: passed_params.bandwidth,
                 additional_params: passed_params.additional_params
             }})
             process.exit(1)
@@ -140,7 +142,7 @@ RunSignal.once("run", async (params) => {
     //var tsp_args = `--buffer-size-mb 512 --max-flushed-packets 7 --max-output-packets 7 --max-input-packets 7 --realtime -I dvb --signal-timeout 10 --guard-interval auto --receive-timeout 10000 --adapter ${params.tuner} --delivery-system DVB-T2 --frequency ${params.frequency}000000 --transmission-mode auto --spectral-inversion off`.split(" ")
     //var tsp_args = `--buffer-size-mb ${params.buffer_size} --receive-timeout 10000 --realtime -I dvb --signal-timeout 10 --guard-interval auto --adapter ${params.tuner} --delivery-system DVB-T2 --frequency ${params.frequency}000000 --transmission-mode auto --spectral-inversion off`.split(" ")
     //var tsp_args = `--buffer-size-mb ${params.buffer_size} --receive-timeout 10000 --realtime -I dvb --signal-timeout 10 --guard-interval auto --adapter ${params.tuner} --delivery-system ${params.system} ${DEMUX_BUFFER > 0 ? `--demux-buffer-size ${DEMUX_BUFFER} ` : ''}--frequency ${params.frequency*1e6} --transmission-mode auto --spectral-inversion off`.split(" ")
-    var tsp_args = `--buffer-size-mb ${params.buffer_size} --receive-timeout 10000 --realtime -I dvb --signal-timeout 10 --guard-interval auto --adapter ${params.tuner} --delivery-system ${params.system} --frequency ${params.frequency*1e6} --transmission-mode auto --spectral-inversion off`.split(" ")
+    var tsp_args = `--buffer-size-mb ${params.buffer_size} --receive-timeout 10000 --realtime -I dvb --signal-timeout 10 --guard-interval auto --adapter ${params.tuner} --delivery-system ${params.system} ${params.system !== "ATSC" ? `--bandwidth ${params.bandwidth*1e6} ` : ''}--frequency ${params.frequency*1e6} --transmission-mode auto --spectral-inversion off`.split(" ")
     //var tsp_args = `--buffer-size-mb 8 --realtime -I dvb --signal-timeout 10 --guard-interval auto --receive-timeout 10000 --adapter ${params.tuner} --delivery-system DVB-T2 --frequency ${params.frequency}000000 --transmission-mode auto --spectral-inversion off`.split(" ")
     //var tsp_args = `--buffer-size-mb 2 --max-flushed-packets 128 --max-output-packets 64 --max-input-packets 256 --realtime -I dvb --signal-timeout 10 --guard-interval auto --receive-timeout 10000 --adapter ${params.tuner} --delivery-system DVB-T2 --frequency ${params.frequency}000000 --transmission-mode auto --spectral-inversion off`.split(" ")
     //var tsp_args = `--realtime -I dvb --signal-timeout 10 --guard-interval auto --receive-timeout 10000 --adapter ${params.tuner} --delivery-system DVB-T2 --frequency ${params.frequency}000000 --transmission-mode auto --spectral-inversion off`.split(" ")
@@ -294,6 +296,7 @@ RunSignal.once("run", async (params) => {
         frequency: params.frequency,
         channels: params.channels,
         system: params.system,
+        bandwidth: params.bandwidth,
         additional_params: params.additional_params
     }})
     process.exit(1)

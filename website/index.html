@@ -754,6 +754,8 @@
 
                 var autoScanSaved = {}
                 var DTV_SYSTEM = "DVB-T2"
+                var DTV_BANDWIDTH = "8"
+
                 var DVBAppliedStreams;
 
                 const showMultiplexersList = () => {                                        
@@ -761,7 +763,7 @@
                         $('#dvb-setting > #dvb-msg').text("No channels found!")
                         return
                     }
-                    
+                                        
                     $("#dvb-setting > #recent-scan").prop("disabled", false)
                     $('#dvb-results').prop("hidden", false)
                     $('#dvb-results > #cancel').prop("hidden", false)
@@ -1017,6 +1019,7 @@
                                     tuner: parseInt($("#dvb-setting > #adapter").val()),
                                     frequency: parseInt($('#dvb-results > #multiplexes > #frequency').val()),
                                     system: DTV_SYSTEM,
+                                    bandwidth: DTV_BANDWIDTH,
                                     channels: DVBAppliedStreams,
                                     additional_params: $("#dvb-results > #channels > center > #additional-params").val()
                                 }),
